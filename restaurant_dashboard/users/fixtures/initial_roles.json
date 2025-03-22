@@ -1,0 +1,35 @@
+# users/fixtures/initial_roles.json
+[
+  {
+    "model": "users.userrole",
+    "pk": 1,
+    "fields": {
+      "name": "leadership",
+      "description": "SB Leadership Team with full access to all features"
+    }
+  },
+  {
+    "model": "users.userrole",
+    "pk": 2,
+    "fields": {
+      "name": "country_leadership",
+      "description": "Country Leadership Team with full access to their country"
+    }
+  },
+  {
+    "model": "users.userrole",
+    "pk": 3,
+    "fields": {
+      "name": "country_admin",
+      "description": "Country Admin Team with limited access to their country"
+    }
+  },
+  {
+    "model": "users.userrole",
+    "pk": 4,
+    "fields": {
+      "name": "branch_manager",
+      "description": "Branch Manager with view access to their branch"
+    }
+  }
+]
