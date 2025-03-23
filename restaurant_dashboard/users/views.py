@@ -8,15 +8,65 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from .models import User, UserRole
 from .serializers import UserSerializer, UserRoleSerializer
+# Add these imports
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiResponse
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List user roles",
+        description="Returns a list of all available user roles",
+        tags=["Users"]
+    ),
+    retrieve=extend_schema(
+        summary="Get user role details",
+        description="Retrieve details of a specific user role",
+        tags=["Users"]
+    )
+)
 class UserRoleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = UserRole.objects.all()
     serializer_class = UserRoleSerializer
     permission_classes = [IsAuthenticated]
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List users",
+        description="Returns a list of users filtered by user's role and permissions",
+        tags=["Users"]
+    ),
+    retrieve=extend_schema(
+        summary="Get user details",
+        description="Retrieve details of a specific user",
+        tags=["Users"]
+    ),
+    create=extend_schema(
+        summary="Create user",
+        description="Create a new user (restricted by role permissions)",
+        tags=["Users"]
+    ),
+    update=extend_schema(
+        summary="Update user",
+        description="Update all fields of an existing user (restricted by role permissions)",
+        tags=["Users"]
+    ),
+    partial_update=extend_schema(
+        summary="Partially update user",
+        description="Update specific fields of an existing user (restricted by role permissions)",
+        tags=["Users"]
+    ),
+    destroy=extend_schema(
+        summary="Delete user",
+        description="Delete an existing user (restricted by role permissions)",
+        tags=["Users"]
+    )
+)
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     
+    @extend_schema(
+        description="Returns users based on the requester's role permissions",
+        tags=["Users"]
+    )
     def get_queryset(self):
         user = self.request.user
         

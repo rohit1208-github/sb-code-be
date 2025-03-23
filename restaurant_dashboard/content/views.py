@@ -8,9 +8,52 @@ from .serializers import (
 )
 from users.permissions import IsLeadershipTeam, IsCountryLeadership, IsCountryAdmin, IsBranchManager
 from django.db.models import Q
+# Add these imports
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiResponse, OpenApiExample
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+import os
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List menu items",
+        description="Returns a list of menu items filtered by user's role and permissions",
+        parameters=[
+            OpenApiParameter(name="microsite", description="Filter by microsite ID", required=False, type=int)
+        ],
+        tags=["Content Management"]
+    ),
+    retrieve=extend_schema(
+        summary="Get menu item details",
+        description="Retrieve details of a specific menu item",
+        tags=["Content Management"]
+    ),
+    create=extend_schema(
+        summary="Create menu item",
+        description="Create a new menu item (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    update=extend_schema(
+        summary="Update menu item",
+        description="Update all fields of an existing menu item (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    partial_update=extend_schema(
+        summary="Partially update menu item",
+        description="Update specific fields of an existing menu item (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    destroy=extend_schema(
+        summary="Delete menu item",
+        description="Delete an existing menu item (restricted by role permissions)",
+        tags=["Content Management"]
+    )
+)
 class MenuItemViewSet(viewsets.ModelViewSet):
     serializer_class = MenuItemSerializer
+    parser_classes = (MultiPartParser, FormParser)
     
     def get_queryset(self):
         user = self.request.user
@@ -51,7 +94,88 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
+    
+    @extend_schema(
+        summary="Upload menu item image",
+        description="Upload an image for a specific menu item",
+        request={"multipart/form-data": {"file": "file", "menu_item_id": "string"}},
+        responses={
+            200: MenuItemSerializer,
+            400: OpenApiResponse(description="Bad request: missing file or menu item ID"),
+            404: OpenApiResponse(description="Menu item not found"),
+            500: OpenApiResponse(description="Internal server error")
+        },
+        tags=["Content Management"]
+    )
+    @action(detail=False, methods=['post'])
+    def upload_image(self, request):
+        if 'file' not in request.data:
+            return Response({'error': 'No file was provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        file = request.data['file']
+        menu_item_id = request.data.get('menu_item_id')
+        
+        if not menu_item_id:
+            return Response({'error': 'Menu item ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            menu_item = MenuItem.objects.get(id=menu_item_id)
+            
+            # Check if user has permission to update this menu item
+            self.check_object_permissions(request, menu_item)
+            
+            # Delete old image if it exists
+            if menu_item.image and os.path.isfile(menu_item.image.path):
+                os.remove(menu_item.image.path)
+            
+            menu_item.image = file
+            menu_item.save()
+            
+            return Response(
+                MenuItemSerializer(menu_item).data,
+                status=status.HTTP_200_OK
+            )
+            
+        except MenuItem.DoesNotExist:
+            return Response({'error': 'Menu item not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List testimonials",
+        description="Returns a list of testimonials filtered by user's role and permissions",
+        parameters=[
+            OpenApiParameter(name="microsite", description="Filter by microsite ID", required=False, type=int)
+        ],
+        tags=["Content Management"]
+    ),
+    retrieve=extend_schema(
+        summary="Get testimonial details",
+        description="Retrieve details of a specific testimonial",
+        tags=["Content Management"]
+    ),
+    create=extend_schema(
+        summary="Create testimonial",
+        description="Create a new testimonial (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    update=extend_schema(
+        summary="Update testimonial",
+        description="Update all fields of an existing testimonial (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    partial_update=extend_schema(
+        summary="Partially update testimonial",
+        description="Update specific fields of an existing testimonial (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    destroy=extend_schema(
+        summary="Delete testimonial",
+        description="Delete an existing testimonial (restricted by role permissions)",
+        tags=["Content Management"]
+    )
+)
 class TestimonialViewSet(viewsets.ModelViewSet):
     serializer_class = TestimonialSerializer
     
@@ -93,6 +217,41 @@ class TestimonialViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List food delivery embeds",
+        description="Returns a list of food delivery embeds filtered by user's role and permissions",
+        parameters=[
+            OpenApiParameter(name="microsite", description="Filter by microsite ID", required=False, type=int)
+        ],
+        tags=["Content Management"]
+    ),
+    retrieve=extend_schema(
+        summary="Get food delivery embed details",
+        description="Retrieve details of a specific food delivery embed",
+        tags=["Content Management"]
+    ),
+    create=extend_schema(
+        summary="Create food delivery embed",
+        description="Create a new food delivery embed (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    update=extend_schema(
+        summary="Update food delivery embed",
+        description="Update all fields of an existing food delivery embed (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    partial_update=extend_schema(
+        summary="Partially update food delivery embed",
+        description="Update specific fields of an existing food delivery embed (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    destroy=extend_schema(
+        summary="Delete food delivery embed",
+        description="Delete an existing food delivery embed (restricted by role permissions)",
+        tags=["Content Management"]
+    )
+)
 class FoodDeliveryEmbedViewSet(viewsets.ModelViewSet):
     serializer_class = FoodDeliveryEmbedSerializer
     
@@ -117,6 +276,41 @@ class FoodDeliveryEmbedViewSet(viewsets.ModelViewSet):
         
         return FoodDeliveryEmbed.objects.none()
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List careers",
+        description="Returns a list of careers filtered by user's role and permissions",
+        parameters=[
+            OpenApiParameter(name="microsite", description="Filter by microsite ID", required=False, type=int)
+        ],
+        tags=["Content Management"]
+    ),
+    retrieve=extend_schema(
+        summary="Get career details",
+        description="Retrieve details of a specific career",
+        tags=["Content Management"]
+    ),
+    create=extend_schema(
+        summary="Create career",
+        description="Create a new career (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    update=extend_schema(
+        summary="Update career",
+        description="Update all fields of an existing career (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    partial_update=extend_schema(
+        summary="Partially update career",
+        description="Update specific fields of an existing career (restricted by role permissions)",
+        tags=["Content Management"]
+    ),
+    destroy=extend_schema(
+        summary="Delete career",
+        description="Delete an existing career (restricted by role permissions)",
+        tags=["Content Management"]
+    )
+)
 class CareerViewSet(viewsets.ModelViewSet):
     serializer_class = CareerSerializer
     
@@ -140,49 +334,3 @@ class CareerViewSet(viewsets.ModelViewSet):
             return base_queryset.filter(microsite__branches=user.branch)
         
         return Career.objects.none()
-    # content/views.py (add to existing file)
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework import status
-import os
-
-class MenuItemViewSet(viewsets.ModelViewSet):
-    # Add to existing class
-    parser_classes = (MultiPartParser, FormParser)
-    
-    @action(detail=False, methods=['post'])
-    def upload_image(self, request):
-        if 'file' not in request.data:
-            return Response({'error': 'No file was provided'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        file = request.data['file']
-        menu_item_id = request.data.get('menu_item_id')
-        
-        if not menu_item_id:
-            return Response({'error': 'Menu item ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            menu_item = MenuItem.objects.get(id=menu_item_id)
-            
-            # Check if user has permission to update this menu item
-            self.check_object_permissions(request, menu_item)
-            
-            # Delete old image if it exists
-            if menu_item.image and os.path.isfile(menu_item.image.path):
-                os.remove(menu_item.image.path)
-            
-            menu_item.image = file
-            menu_item.save()
-            
-            return Response(
-                MenuItemSerializer(menu_item).data,
-                status=status.HTTP_200_OK
-            )
-            
-        except MenuItem.DoesNotExist:
-            return Response({'error': 'Menu item not found'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        

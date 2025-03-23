@@ -2,16 +2,54 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated  # Add this import
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from .models import Microsite, MicrositeSection
 from .serializers import MicrositeSerializer, MicrositeSectionSerializer
 from users.permissions import IsLeadershipTeam, IsCountryLeadership, IsCountryAdmin, IsBranchManager
+# Add these imports
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiResponse
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List microsites",
+        description="Returns a list of microsites filtered by user's role and permissions",
+        tags=["Microsites"]
+    ),
+    retrieve=extend_schema(
+        summary="Get microsite details",
+        description="Retrieve details of a specific microsite",
+        tags=["Microsites"]
+    ),
+    create=extend_schema(
+        summary="Create microsite",
+        description="Create a new microsite (restricted by role permissions)",
+        tags=["Microsites"]
+    ),
+    update=extend_schema(
+        summary="Update microsite",
+        description="Update all fields of an existing microsite (restricted by role permissions)",
+        tags=["Microsites"]
+    ),
+    partial_update=extend_schema(
+        summary="Partially update microsite",
+        description="Update specific fields of an existing microsite (restricted by role permissions)",
+        tags=["Microsites"]
+    ),
+    destroy=extend_schema(
+        summary="Delete microsite",
+        description="Delete an existing microsite (restricted by role permissions)",
+        tags=["Microsites"]
+    )
+)
 class MicrositeViewSet(viewsets.ModelViewSet):
     serializer_class = MicrositeSerializer
     
+    @extend_schema(
+        description="Returns microsites based on user's role permissions",
+        tags=["Microsites"]
+    )
     def get_queryset(self):
         user = self.request.user
         
@@ -31,6 +69,10 @@ class MicrositeViewSet(viewsets.ModelViewSet):
         
         return Microsite.objects.none()
     
+    @extend_schema(
+        description="Determines permissions based on action and user role",
+        tags=["Microsites"]
+    )
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
             permission_classes = [IsAuthenticated]
@@ -45,6 +87,16 @@ class MicrositeViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
     
+    @extend_schema(
+        summary="Manage microsite sections",
+        description="Get or update sections for a specific microsite",
+        methods=["GET", "PUT"],
+        responses={
+            200: MicrositeSectionSerializer(many=True),
+            404: OpenApiResponse(description="Microsite not found")
+        },
+        tags=["Microsites"]
+    )
     @action(detail=True, methods=['get', 'put'])
     def sections(self, request, pk=None):
         microsite = self.get_object()

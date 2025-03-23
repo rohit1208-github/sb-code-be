@@ -8,10 +8,63 @@ from management.models import Branch
 from content.models import MenuItem
 from users.models import User
 from microsites.models import Microsite
+# Add this import
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse, inline_serializer
+from rest_framework import serializers
+
+# Define a response serializer for documentation
+class DashboardStatsResponseSerializer(serializers.Serializer):
+    statistics = serializers.DictField(
+        child=serializers.DictField(),
+        help_text="Various statistics about the system"
+    )
+    recentMenuItems = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="Recent menu items added to the system"
+    )
+    staffCount = serializers.IntegerField(help_text="Total number of staff users")
+    webTraffic = serializers.DictField(help_text="Web traffic statistics")
+    socialMedia = serializers.DictField(help_text="Social media engagement metrics")
+    trafficByRegion = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="Traffic statistics by region"
+    )
 
 class DashboardStatsAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Get dashboard statistics",
+        description="Returns various statistics and metrics for the dashboard including branch data, user counts, web traffic, and social media metrics.",
+        tags=["Analytics"],
+        responses={
+            200: OpenApiResponse(
+                response=DashboardStatsResponseSerializer,
+                description="Dashboard statistics retrieved successfully"
+            ),
+            401: OpenApiResponse(description="Authentication failed")
+        },
+        examples=[
+            OpenApiExample(
+                "Example Response",
+                value={
+                    "statistics": {
+                        "branchesWithOrdering": {"count": 10, "newLinks": 3},
+                        "contactEntries": {"count": 30, "unread": 6},
+                        "micrositesLive": {"count": 5, "newToday": 1},
+                        "lifetimeVisitors": {"count": 220000, "message": "Lifetime visits across all regions"}
+                    },
+                    "recentMenuItems": [
+                        {"id": 1, "name": "Sample Item", "branch": "Branch Name", "branches": 3, "image": "http://example.com/image.jpg"}
+                    ],
+                    "staffCount": 25,
+                    "webTraffic": {"total": 320958, "growth": 20.9},
+                    "socialMedia": {"likes": 306500, "comments": 27500},
+                    "trafficByRegion": [{"region": "Region A", "visits": 44}]
+                }
+            )
+        ]
+    )
     def get(self, request):
         # Get counts
         total_branches = Branch.objects.count()

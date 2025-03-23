@@ -6,40 +6,43 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from users.serializers import UserSerializer
+# Add these imports
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema_view
+from rest_framework.decorators import api_view, permission_classes
+from django.urls import get_resolver
 
 User = get_user_model()
 
 class UserInfoView(APIView):
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Get current user information",
+        description="Returns information about the currently authenticated user",
+        tags=["Authentication"],
+        responses={
+            200: UserSerializer,
+            401: OpenApiResponse(description="Authentication failed")
+        }
+    )
     def get(self, request):
         user = request.user
         serializer = UserSerializer(user)
         return Response(serializer.data)
 
-# api/urls.py (updated)
-from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import UserInfoView
-
-urlpatterns = [
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('user-info/', UserInfoView.as_view(), name='user_info'),
-    path('users/', include('users.urls')),
-    path('management/', include('management.urls')),
-    path('microsites/', include('microsites.urls')),
-    path('content/', include('content.urls')),
-    path('optimization/', include('optimization.urls')),
-    path('analytics/', include('analytics.urls')),
-]
-# api/views.py (update existing file)
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import api_view, permission_classes
-from django.urls import get_resolver
-
+@extend_schema(
+    summary="API root overview",
+    description="API documentation root endpoint providing information about available endpoints",
+    tags=["API Documentation"],
+    responses={
+        200: OpenApiResponse(
+            description="Dictionary of available API endpoints organized by app",
+            response=dict
+        ),
+        401: OpenApiResponse(description="Authentication failed")
+    }
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_root(request):
@@ -73,21 +76,35 @@ def api_root(request):
         },
     })
 
-# Update the api/urls.py to include the root API view
-# api/urls.py
-from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import UserInfoView, api_root
 
-urlpatterns = [
-    path('', api_root, name='api-root'),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('user-info/', UserInfoView.as_view(), name='user_info'),
-    path('users/', include('users.urls')),
-    path('management/', include('management.urls')),
-    path('microsites/', include('microsites.urls')),
-    path('content/', include('content.urls')),
-    path('optimization/', include('optimization.urls')),
-    path('analytics/', include('analytics.urls')),
-]
+
+# Add these to api/views.py
+
+from drf_spectacular.utils import extend_schema
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    @extend_schema(
+        summary="Obtain JWT token pair",
+        description="Takes a set of user credentials and returns an access and refresh JSON web token pair",
+        tags=["Authentication"],
+        responses={
+            200: OpenApiResponse(description="JWT token pair obtained successfully"),
+            401: OpenApiResponse(description="Invalid credentials")
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+class CustomTokenRefreshView(TokenRefreshView):
+    @extend_schema(
+        summary="Refresh JWT token",
+        description="Takes a refresh type JSON web token and returns an access type JSON web token",
+        tags=["Authentication"],
+        responses={
+            200: OpenApiResponse(description="Token refreshed successfully"),
+            401: OpenApiResponse(description="Invalid refresh token")
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
