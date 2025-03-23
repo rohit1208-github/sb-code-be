@@ -156,3 +156,11 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     # OTHER SETTINGS
 }
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),   # Adjust to your desired lifetime
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Adjust as needed
+    # Optional: add other configuration settings here
+}

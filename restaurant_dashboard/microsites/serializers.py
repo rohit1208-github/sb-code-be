@@ -25,12 +25,19 @@ class MicrositeSerializer(serializers.ModelSerializer):
         branches_data = validated_data.pop('branches', [])
         microsite = Microsite.objects.create(**validated_data)
         
-        for branch_id in branches_data:
+        for branch_data in branches_data:
             try:
+                # Handle the case when branch_data is a Branch object
+                if hasattr(branch_data, 'id'):
+                    branch_id = branch_data.id
+                else:
+                    branch_id = branch_data
+                    
                 branch = Branch.objects.get(id=branch_id)
                 microsite.branches.add(branch)
-            except Branch.DoesNotExist:
-                pass
+            except (Branch.DoesNotExist, AttributeError, ValueError, TypeError):
+                # Skip invalid branches
+                continue
         
         # Create default sections
         default_sections = [
