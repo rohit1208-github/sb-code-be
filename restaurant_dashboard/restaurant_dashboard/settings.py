@@ -154,6 +154,7 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Your API description',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
     # OTHER SETTINGS
 }
 
