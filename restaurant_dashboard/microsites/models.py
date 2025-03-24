@@ -3,14 +3,14 @@ from django.db import models
 from management.models import Branch
 
 class Microsite(models.Model):
-    name = models.CharField(max_length=100)
-    branches = models.ManyToManyField(Branch, related_name='microsites')
-    slug = models.SlugField(unique=True)
-    is_active = models.BooleanField(default=True)
-    has_language_switcher = models.BooleanField(default=False)
-    secondary_language = models.CharField(max_length=10, blank=True, null=True)
+    name = models.CharField(max_length=100)  # Only this is mandatory
+    branches = models.ManyToManyField(Branch, related_name='microsites', blank=True)  # Optional multiple branches
+    site_id = models.SlugField(unique=True, blank=True, null=True)  # Renamed from 'slug' to 'site_id' and made optional
+    is_active = models.BooleanField(default=True, blank=True, null=True)  # Optional
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # has_language_switcher and secondary_language fields removed
     
     def __str__(self):
         return self.name

@@ -10,7 +10,7 @@ from users.permissions import IsLeadershipTeam, IsCountryLeadership, IsCountryAd
 from django.db.models import Q
 # Add these imports
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiResponse, OpenApiExample
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
@@ -53,7 +53,7 @@ import os
 )
 class MenuItemViewSet(viewsets.ModelViewSet):
     serializer_class = MenuItemSerializer
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     def get_queryset(self):
         user = self.request.user
         
@@ -146,7 +146,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         summary="List testimonials",
         description="Returns a list of testimonials filtered by user's role and permissions",
         parameters=[
-            OpenApiParameter(name="microsite", description="Filter by microsite ID", required=False, type=int)
+            OpenApiParameter(name="microsite", description="Filter by microsite ID (optional)", required=False, type=int)
         ],
         tags=["Content Management"]
     ),
@@ -182,29 +182,28 @@ class TestimonialViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         
-        # Filter by microsite if provided
+        # Filter by microsite if provided (optional parameter)
         microsite_id = self.request.query_params.get('microsite', None)
         base_queryset = Testimonial.objects.all()
         
         if microsite_id:
-            base_queryset = base_queryset.filter(microsite_id=microsite_id)
+            base_queryset = base_queryset.filter(microsites__id=microsite_id)
         
         # Leadership team can see all testimonials
-        if user.role and user.role.name == 'leadership':
+        if hasattr(user, 'role') and user.role and user.role.name == 'leadership':
             return base_queryset
         
         # Country leadership & admins can only see testimonials for microsites in their country
-        if user.role and user.role.name in ['country_leadership', 'country_admin']:
-            if user.country:
-                return base_queryset.filter(microsite__branches__country=user.country).distinct()
+        if hasattr(user, 'role') and user.role and user.role.name in ['country_leadership', 'country_admin']:
+            if hasattr(user, 'country') and user.country:
+                return base_queryset.filter(microsites__branches__country=user.country).distinct()
         
         # Branch managers can only see testimonials for microsites linked to their branch
-        if user.role and user.role.name == 'branch_manager':
-            if user.branch:
-                return base_queryset.filter(microsite__branches=user.branch)
+        if hasattr(user, 'role') and user.role and user.role.name == 'branch_manager':
+            if hasattr(user, 'branch') and user.branch:
+                return base_queryset.filter(microsites__branches=user.branch).distinct()
         
-        return Testimonial.objects.none()
-    
+        return Testimonial.objects.none()    
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
             permission_classes = [IsAuthenticated]

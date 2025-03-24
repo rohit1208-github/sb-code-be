@@ -17,10 +17,14 @@ class MenuItemAdmin(admin.ModelAdmin):
 
 @admin.register(Testimonial)
 class TestimonialAdmin(admin.ModelAdmin):
-    list_display = ('name', 'microsite', 'is_active', 'created_at')
-    list_filter = ('is_active', 'microsite')
+    list_display = ('name', 'get_microsites', 'is_active', 'created_at')
+    list_filter = ('is_active',)
     search_fields = ('name', 'content')
-    ordering = ('microsite', 'created_at')
+    filter_horizontal = ('microsites',)  # For easier management of many-to-many
+    
+    def get_microsites(self, obj):
+        return ", ".join([m.name for m in obj.microsites.all()])
+    get_microsites.short_description = 'Microsites'
 # content/admin.py (Update these admin classes)
 
 @admin.register(FoodDeliveryEmbed)

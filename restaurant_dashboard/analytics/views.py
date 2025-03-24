@@ -72,19 +72,27 @@ class DashboardStatsAPIView(APIView):
         total_staff = User.objects.filter(is_staff=False).count()
         total_microsites = Microsite.objects.filter(is_active=True).count()
         
-        # Get recent menu items
+    # Get recent menu items
         recent_menu_items = []
-        menu_items = MenuItem.objects.select_related('microsite').order_by('-created_at')[:5]
+        menu_items = MenuItem.objects.prefetch_related('microsites').order_by('-created_at')[:5]
         for item in menu_items:
-            # Count branches for each menu item
-            branches_count = item.microsite.branches.count()
+            # Get the first associated microsite or use a default
+            microsites = list(item.microsites.all())
+            microsite_name = microsites[0].name if microsites else "No Microsite"
+            
+            # Count branches for all microsites of this menu item
+            branches_count = 0
+            for microsite in microsites:
+                branches_count += microsite.branches.count()
+            
             recent_menu_items.append({
                 'id': item.id,
                 'name': item.name,
-                'branch': item.microsite.name,
+                'branch': microsite_name,
                 'branches': branches_count,
                 'image': request.build_absolute_uri(item.image.url) if item.image else None
             })
+    
         
         # Mock web traffic data
         web_traffic = {

@@ -17,9 +17,8 @@ class MicrositeSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Microsite
-        fields = ['id', 'name', 'slug', 'branches', 'branches_data', 'is_active', 
-                  'has_language_switcher', 'secondary_language', 'sections', 
-                  'created_at', 'updated_at']
+        fields = ['id', 'name', 'site_id', 'branches', 'branches_data', 'is_active',
+                  'sections', 'created_at', 'updated_at']
     
     def create(self, validated_data):
         branches_data = validated_data.pop('branches', [])

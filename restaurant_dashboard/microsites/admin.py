@@ -8,10 +8,10 @@ class MicrositeSectionInline(admin.TabularInline):
 
 @admin.register(Microsite)
 class MicrositeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug', 'is_active', 'has_language_switcher', 'created_at')
-    list_filter = ('is_active', 'has_language_switcher')
-    search_fields = ('name', 'slug')
-    prepopulated_fields = {'slug': ('name',)}
+    list_display = ('name', 'site_id', 'is_active', 'created_at')
+    list_filter = ('is_active',)
+    search_fields = ('name', 'site_id')
+    prepopulated_fields = {'site_id': ('name',)}
     filter_horizontal = ('branches',)
     inlines = [MicrositeSectionInline]
 

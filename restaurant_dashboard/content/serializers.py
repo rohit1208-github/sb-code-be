@@ -16,7 +16,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
 class TestimonialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Testimonial
-        fields = ['id', 'microsite', 'name', 'content', 'is_active', 'created_at']
+        fields = ['id', 'microsites', 'name', 'content', 'is_active', 'created_at']
 
 # content/serializers.py (Update these serializers)
 

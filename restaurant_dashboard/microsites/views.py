@@ -8,7 +8,6 @@ from rest_framework.views import APIView
 from .models import Microsite, MicrositeSection
 from .serializers import MicrositeSerializer, MicrositeSectionSerializer
 from users.permissions import IsLeadershipTeam, IsCountryLeadership, IsCountryAdmin, IsBranchManager
-# Add these imports
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiResponse
 
 @extend_schema_view(

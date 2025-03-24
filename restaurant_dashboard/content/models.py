@@ -16,7 +16,7 @@ from microsites.models import Microsite
 #         return self.name
 
 class Testimonial(models.Model):
-    microsite = models.ForeignKey(Microsite, on_delete=models.CASCADE, related_name='testimonials')
+    microsites = models.ManyToManyField(Microsite, related_name='testimonials', blank=True)
     name = models.CharField(max_length=100)
     content = models.TextField()
     is_active = models.BooleanField(default=True)
