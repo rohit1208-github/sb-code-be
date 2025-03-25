@@ -74,7 +74,8 @@ class Career(models.Model):
                                related_name='careers', blank=True, null=True)
     job_type = models.CharField(max_length=20, choices=JOB_TYPE_CHOICES, 
                                 blank=True, null=True)
-    url = models.URLField(blank=True, null=True)  # Link
+        # Changed from URLField to CharField
+    url = models.CharField(max_length=255, blank=True, null=True)  
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)  # Status
     microsites = models.ManyToManyField('microsites.Microsite', related_name='careers', blank=True)
