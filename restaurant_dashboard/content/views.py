@@ -342,3 +342,31 @@ class CareerViewSet(viewsets.ModelViewSet):
             
         serializer = BranchSerializer(branches, many=True)
         return Response(serializer.data)
+    
+    @extend_schema(
+        summary="Get careers for public listing",
+        description="Returns a list of all active careers for public display on the careers page",
+        responses={
+            200: OpenApiResponse(
+                response=CareerSerializer(many=True),
+                description="List of all active careers"
+            )
+        },
+        tags=["Content Management"]
+    )
+    @action(detail=False, methods=['get'])
+    def careers_list(self, request):
+        """
+        Get a list of all active careers for public display.
+        This endpoint doesn't require any filtering parameters.
+        """
+        # Get all active careers
+        careers = Career.objects.filter(is_active=True).order_by('name')
+        
+        # Serialize the careers
+        serializer = self.get_serializer(careers, many=True)
+        
+        return Response({
+            'count': careers.count(),
+            'results': serializer.data
+        })
