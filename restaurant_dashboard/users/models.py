@@ -38,9 +38,12 @@ class CustomUserManager(BaseUserManager):
         
         return self.create_user(email, password, **extra_fields)
 
+# Add these fields to the User model class
 class User(AbstractUser):
     username = None
     email = models.EmailField('email address', unique=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)  # New field
+    description = models.TextField(blank=True, null=True)  # New field
     role = models.ForeignKey(UserRole, on_delete=models.SET_NULL, null=True, blank=True)
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True)
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)

@@ -146,7 +146,8 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         summary="List testimonials",
         description="Returns a list of testimonials filtered by user's role and permissions",
         parameters=[
-            OpenApiParameter(name="microsite", description="Filter by microsite ID (optional)", required=False, type=int)
+            OpenApiParameter(name="microsite", description="Filter by microsite ID (optional)", required=False, type=int),
+            OpenApiParameter(name="branch", description="Filter by branch ID (optional)", required=False, type=int)
         ],
         tags=["Content Management"]
     ),
@@ -181,40 +182,65 @@ class TestimonialViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        
-        # Filter by microsite if provided (optional parameter)
-        microsite_id = self.request.query_params.get('microsite', None)
         base_queryset = Testimonial.objects.all()
         
+        # Filter by microsite if provided
+        microsite_id = self.request.query_params.get('microsite', None)
         if microsite_id:
             base_queryset = base_queryset.filter(microsites__id=microsite_id)
+            
+        # Filter by branch if provided
+        branch_id = self.request.query_params.get('branch', None)
+        if branch_id:
+            base_queryset = base_queryset.filter(branch_id=branch_id)
         
-        # Leadership team can see all testimonials
-        if hasattr(user, 'role') and user.role and user.role.name == 'leadership':
-            return base_queryset
-        
-        # Country leadership & admins can only see testimonials for microsites in their country
-        if hasattr(user, 'role') and user.role and user.role.name in ['country_leadership', 'country_admin']:
-            if hasattr(user, 'country') and user.country:
+        # Apply role-based filtering (existing logic)
+        if hasattr(user, 'role') and user.role:
+            if user.role.name == 'leadership':
+                return base_queryset
+            elif user.role.name in ['country_leadership', 'country_admin'] and hasattr(user, 'country') and user.country:
                 return base_queryset.filter(microsites__branches__country=user.country).distinct()
-        
-        # Branch managers can only see testimonials for microsites linked to their branch
-        if hasattr(user, 'role') and user.role and user.role.name == 'branch_manager':
-            if hasattr(user, 'branch') and user.branch:
+            elif user.role.name == 'branch_manager' and hasattr(user, 'branch') and user.branch:
                 return base_queryset.filter(microsites__branches=user.branch).distinct()
         
-        return Testimonial.objects.none()    
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            permission_classes = [IsAuthenticated]
-        elif self.action in ['create', 'update', 'partial_update', 'destroy']:
-            if self.request.user.role and self.request.user.role.name in ['leadership', 'country_leadership', 'country_admin']:
-                permission_classes = [IsAuthenticated]
-            else:
-                permission_classes = [IsBranchManager]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+        return Testimonial.objects.none()
+    
+    # Add an endpoint to get available branches
+    @extend_schema(
+        summary="Get available branches",
+        description="Returns a list of branches available for testimonials",
+        responses={200: OpenApiResponse(description="List of available branches")},
+        tags=["Content Management"]
+    )
+    @action(detail=False, methods=['get'])
+    def available_branches(self, request):
+        from management.models import Branch
+        from management.serializers import BranchSerializer
+        
+        user = request.user
+        branches = []
+        
+        if user.role and user.role.name == 'leadership':
+            branches = Branch.objects.filter(is_active=True)
+        elif user.role and user.role.name in ['country_leadership', 'country_admin'] and user.country:
+            branches = Branch.objects.filter(country=user.country, is_active=True)
+        elif user.role and user.role.name == 'branch_manager' and user.branch:
+            branches = Branch.objects.filter(id=user.branch.id, is_active=True)
+            
+        serializer = BranchSerializer(branches, many=True)
+        return Response(serializer.data)    
+
+    # def get_permissions(self):
+    #     if self.action in ['list', 'retrieve']:
+    #         permission_classes = [IsAuthenticated]
+    #     elif self.action in ['create', 'update', 'partial_update', 'destroy']:
+    #         if self.request.user.role and self.request.user.role.name in ['leadership', 'country_leadership', 'country_admin']:
+    #             permission_classes = [IsAuthenticated]
+    #         else:
+    #             permission_classes = [IsBranchManager]
+    #     else:
+    #         permission_classes = [IsAuthenticated]
+    #     return [permission() for permission in permission_classes]
 
 # content/views.py (Update these viewsets)
 
@@ -257,7 +283,8 @@ class FoodDeliveryEmbedViewSet(viewsets.ModelViewSet):
         summary="List careers",
         description="Returns a list of careers filtered by user's role and permissions",
         parameters=[
-            OpenApiParameter(name="microsite", description="Filter by microsite ID (optional)", required=False, type=int)
+            OpenApiParameter(name="microsite", description="Filter by microsite ID (optional)", required=False, type=int),
+            OpenApiParameter(name="branch", description="Filter by branch ID (optional)", required=False, type=int)
         ],
         tags=["Content Management"]
     ),
@@ -274,8 +301,13 @@ class CareerViewSet(viewsets.ModelViewSet):
         microsite_id = self.request.query_params.get('microsite', None)
         if microsite_id:
             base_queryset = base_queryset.filter(microsites__id=microsite_id)
+            
+        # Filter by branch if provided (optional parameter)
+        branch_id = self.request.query_params.get('branch', None)
+        if branch_id:
+            base_queryset = base_queryset.filter(branch_id=branch_id)
         
-        # Apply role-based filtering
+        # Apply role-based filtering (existing code...)
         if hasattr(user, 'role') and user.role:
             if user.role.name == 'leadership':
                 return base_queryset
@@ -285,3 +317,28 @@ class CareerViewSet(viewsets.ModelViewSet):
                 return base_queryset.filter(microsites__branches=user.branch).distinct()
         
         return Career.objects.none()
+    
+    # Add an endpoint to get available branches
+    @extend_schema(
+        summary="Get available branches",
+        description="Returns a list of branches available for careers",
+        responses={200: OpenApiResponse(description="List of available branches")},
+        tags=["Content Management"]
+    )
+    @action(detail=False, methods=['get'])
+    def available_branches(self, request):
+        from management.models import Branch
+        from management.serializers import BranchSerializer
+        
+        user = request.user
+        branches = []
+        
+        if user.role and user.role.name == 'leadership':
+            branches = Branch.objects.filter(is_active=True)
+        elif user.role and user.role.name in ['country_leadership', 'country_admin'] and user.country:
+            branches = Branch.objects.filter(country=user.country, is_active=True)
+        elif user.role and user.role.name == 'branch_manager' and user.branch:
+            branches = Branch.objects.filter(id=user.branch.id, is_active=True)
+            
+        serializer = BranchSerializer(branches, many=True)
+        return Response(serializer.data)

@@ -16,15 +16,33 @@ from microsites.models import Microsite
 #         return self.name
 
 class Testimonial(models.Model):
-    microsites = models.ManyToManyField(Microsite, related_name='testimonials', blank=True)
-    name = models.CharField(max_length=100)
-    content = models.TextField()
-    is_active = models.BooleanField(default=True)
+    RATING_CHOICES = [
+        (0, '0 Stars'),
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    ]
+    
+    # Only customer name is mandatory
+    name = models.CharField(max_length=100)  # Customer name
+    
+    # Optional fields
+    content = models.TextField(blank=True, null=True)  # Comments
+    is_active = models.BooleanField(default=True)  # Status
+    branch = models.ForeignKey('management.Branch', on_delete=models.SET_NULL, 
+                               related_name='testimonials', blank=True, null=True)
+    link = models.URLField(blank=True, null=True)  # Link to source or profile
+    rating = models.IntegerField(choices=RATING_CHOICES, blank=True, null=True)  # 0-5 stars
+    
+    # Multiple microsites relationship (already exists)
+    microsites = models.ManyToManyField('microsites.Microsite', related_name='testimonials', blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return f"Testimonial by {self.name}"
-# content/models.py (Update these models)
+        return f"Testimonial by {self.name}"# content/models.py (Update these models)
 
 class FoodDeliveryEmbed(models.Model):
     # Change to ManyToManyField for multiple microsites
@@ -39,16 +57,30 @@ class FoodDeliveryEmbed(models.Model):
         return self.name
 
 class Career(models.Model):
-    # Change to ManyToManyField for multiple microsites
-    microsites = models.ManyToManyField(Microsite, related_name='careers')
-    name = models.CharField(max_length=100)  # Only this is mandatory
-    url = models.URLField(blank=True, null=True)  # Optional (changed from external_url)
-    description = models.TextField(blank=True, null=True)  # Optional
-    is_active = models.BooleanField(default=True)
+    JOB_TYPE_CHOICES = [
+        ('full_time', 'Full Time'),
+        ('part_time', 'Part Time'),
+        ('contract', 'Contract'),
+        ('internship', 'Internship'),
+        ('remote', 'Remote'),
+    ]
+    
+    # Only name/title is mandatory
+    name = models.CharField(max_length=100)  # Title
+    
+    # Optional fields
+    department = models.CharField(max_length=100, blank=True, null=True)
+    branch = models.ForeignKey('management.Branch', on_delete=models.SET_NULL, 
+                               related_name='careers', blank=True, null=True)
+    job_type = models.CharField(max_length=20, choices=JOB_TYPE_CHOICES, 
+                                blank=True, null=True)
+    url = models.URLField(blank=True, null=True)  # Link
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)  # Status
+    microsites = models.ManyToManyField('microsites.Microsite', related_name='careers', blank=True)
     
     def __str__(self):
-        return self.name
-# content/models.py
+        return self.name# content/models.py
 from django.db import models
 from microsites.models import Microsite
 from utils.image_utils import resize_image
